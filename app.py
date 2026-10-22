@@ -15,7 +15,9 @@ Privacy:
 
 import hashlib
 import io
+import os
 import re
+import shutil
 import time
 
 import pypdfium2 as pdfium
@@ -33,6 +35,9 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed",
 )
+
+# Ask Tesseract to use one CPU thread: lower memory and CPU use on the free server.
+os.environ.setdefault("OMP_THREAD_LIMIT", "1")
 
 # Protect the free server from huge images ("decompression bombs").
 Image.MAX_IMAGE_PIXELS = 40_000_000
@@ -180,15 +185,69 @@ def new_result():
 # ---------------------------------------------------------------------------
 # OCR engine check
 # ---------------------------------------------------------------------------
-@st.cache_resource(show_spinner=False)
+@st.cache_data(ttl=30, show_spinner=False)
 def get_ocr_status():
-    """Check once whether Tesseract is installed and which languages it has."""
+    """
+    Check whether the Tesseract program is installed and which languages it has.
+    The answer is remembered for only 30 seconds, so a fix (such as adding
+    packages.txt) is noticed quickly. No document data is involved here.
+    """
+    status = {
+        "ok": False,
+        "path": shutil.which("tesseract") or "",
+        "version": "",
+        "languages": [],
+        "problem": "",
+    }
+
+    if not status["path"]:
+        status["problem"] = "not_installed"
+        return status
+
     try:
-        version = str(pytesseract.get_tesseract_version())
-        languages = list(pytesseract.get_languages(config=""))
-        return {"ok": True, "version": version, "languages": languages}
+        status["version"] = str(pytesseract.get_tesseract_version())
     except Exception:
-        return {"ok": False, "version": "", "languages": []}
+        status["problem"] = "not_working"
+        return status
+
+    status["ok"] = True
+    languages = []
+    try:
+        languages = list(pytesseract.get_languages(config=""))
+    except Exception:
+        try:
+            languages = list(pytesseract.get_languages())
+        except Exception:
+            languages = []
+    status["languages"] = languages
+    if not languages:
+        status["problem"] = "no_languages"
+    return status
+
+
+def ocr_problem_text(status):
+    """A clear, helpful message that explains why OCR cannot be used."""
+    problem = status.get("problem", "")
+    if problem == "not_installed":
+        return (
+            "The OCR program (Tesseract) is not installed on this server. "
+            "Check that a file named packages.txt is in the main folder of "
+            "your GitHub repository, then use Manage app > Reboot app."
+        )
+    if problem == "not_working":
+        return (
+            "The OCR program (Tesseract) is installed but did not start "
+            "correctly. Use Manage app > Reboot app, then check the app logs."
+        )
+    if problem == "no_languages":
+        return (
+            "Tesseract is installed, but no OCR language data was found. "
+            "Check that packages.txt lists tesseract-ocr-eng, then reboot the app."
+        )
+    return (
+        "The OCR languages you selected are not installed on this server. "
+        "Try choosing English, or check packages.txt and reboot the app."
+    )
 
 
 def usable_ocr_language(wanted, installed):
@@ -229,7 +288,7 @@ def prepare_image(image, rotation_choice, is_photo):
                 )
                 angle = int(osd.get("rotate", 0))
                 confidence = float(osd.get("orientation_conf", 0))
-                if angle in (90, 180, 270) and confidence >= 5.0:
+                if angle in (90, 180, 270) and confidence >= 2.0:
                     gray = gray.rotate(-angle, expand=True, fillcolor=255)
             except Exception:
                 pass  # If detection fails, keep the image as it is.
@@ -411,8 +470,7 @@ def run_extraction(file_bytes, extension, ocr_label, rotation_label, force_ocr):
     elif not ocr_available:
         result = new_result()
         result["error"] = (
-            "The OCR engine is not available on this server, so pictures "
-            "cannot be read right now."
+            "Pictures cannot be read right now. " + ocr_problem_text(status)
         )
     else:
         result = extract_from_image(
@@ -599,12 +657,35 @@ def upload_tab(language):
     # ----- Text extraction -----------------------------------------------
     st.markdown("#### Read the text")
     status = get_ocr_status()
-    if not status["ok"]:
+    if not status["ok"] or not status["languages"]:
         st.warning(
-            "The OCR engine is not available on this server. PDFs with "
-            "selectable text can still be read, but scanned PDFs and photos "
-            "cannot."
+            ocr_problem_text(status)
+            + " PDFs with selectable text can still be read, but scanned "
+            "PDFs and photos cannot."
         )
+
+    with st.expander("OCR engine status"):
+        if status["ok"]:
+            installed = status["languages"]
+            st.write("✅ Tesseract OCR program found.")
+            st.write(f"Version: {status['version']}")
+            st.write(
+                "Languages installed: "
+                + (", ".join(sorted(installed)) if installed else "none found")
+            )
+            for code, name in OCR_LANGUAGE_NAMES.items():
+                mark = "✅" if code in installed else "❌"
+                st.write(f"{mark} {name} ({code})")
+            if "osd" in installed:
+                st.write("✅ Automatic image rotation data (osd) available.")
+            else:
+                st.write(
+                    "❌ Automatic image rotation data (osd) is missing. Use the "
+                    "manual rotation option for sideways photos."
+                )
+        else:
+            st.write("❌ Tesseract OCR program not available.")
+            st.write(ocr_problem_text(status))
 
     ocr_options = list(OCR_LANGUAGE_OPTIONS.keys())
     ocr_label = st.selectbox(
