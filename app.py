@@ -572,4 +572,189 @@ def upload_tab(language):
 
     if uploaded_file.size > MAX_FILE_MB * 1024 * 1024:
         st.error(
-     
+            f"This file is {format_size(uploaded_file.size)}. "
+            f"Please upload a file smaller than {MAX_FILE_MB} MB."
+        )
+        return
+
+    file_bytes = uploaded_file.getvalue()
+    if len(file_bytes) == 0:
+        st.error("This file is empty. Please choose a different file.")
+        return
+
+    extension = uploaded_file.name.lower().rsplit(".", 1)[-1]
+
+    st.success("✅ Document uploaded successfully!")
+    st.write(f"**Filename:** {uploaded_file.name}")
+    st.write(f"**Size:** {format_size(uploaded_file.size)}")
+
+    st.markdown("#### Preview")
+    if extension in IMAGE_TYPES:
+        preview_image(file_bytes, uploaded_file.name)
+    elif extension == "pdf":
+        preview_pdf(uploaded_file)
+    else:
+        st.warning("Preview is not available for this file type.")
+
+    # ----- Text extraction -----------------------------------------------
+    st.markdown("#### Read the text")
+    status = get_ocr_status()
+    if not status["ok"]:
+        st.warning(
+            "The OCR engine is not available on this server. PDFs with "
+            "selectable text can still be read, but scanned PDFs and photos "
+            "cannot."
+        )
+
+    ocr_options = list(OCR_LANGUAGE_OPTIONS.keys())
+    ocr_label = st.selectbox(
+        "Language of the text in the document",
+        ocr_options,
+        index=ocr_options.index(DEFAULT_OCR_FOR_UI[language]),
+        help="Choose the language(s) written in the document. More languages make reading slower.",
+    )
+
+    rotation_label = "Automatic"
+    force_ocr = False
+    if extension in IMAGE_TYPES:
+        rotation_label = st.selectbox(
+            "Image rotation",
+            list(ROTATION_OPTIONS.keys()),
+            help="Use this if the photo is sideways or upside down and Automatic did not fix it.",
+        )
+    else:
+        force_ocr = st.checkbox(
+            "Read with OCR instead of PDF text",
+            help="Turn this on if the PDF text looks garbled or has strange symbols.",
+        )
+
+    settings = (extension, ocr_label, rotation_label, force_ocr)
+    current_key = make_key(file_bytes, settings)
+
+    st.caption(
+        f"Limits: first {MAX_PAGES} pages, about {MAX_TOTAL_SECONDS} seconds. "
+        "Reading can take up to a minute for scanned documents."
+    )
+
+    if st.button("Extract text", type="primary", key="extract_button"):
+        with st.spinner("Reading the document. Please wait..."):
+            try:
+                result = run_extraction(
+                    file_bytes, extension, ocr_label, rotation_label, force_ocr
+                )
+            except Exception:
+                result = new_result()
+                result["error"] = (
+                    "Something went wrong while reading this document. "
+                    "Please try another file."
+                )
+        # Kept in memory for this browser session only.
+        st.session_state["extraction"] = {"key": current_key, "result": result}
+
+    saved = st.session_state.get("extraction")
+    if saved and saved["key"] == current_key:
+        show_extraction_result(saved["result"], current_key)
+    elif saved:
+        st.info("The file or settings changed. Tap **Extract text** to read again.")
+
+    # ----- Coming Soon: AI explanation -----------------------------------
+    st.markdown("#### AI document explanation")
+    st.markdown('<span class="badge">Coming Soon</span>', unsafe_allow_html=True)
+    st.button(
+        "Explain this document (Coming Soon)",
+        disabled=True,
+        key="explain_button_disabled",
+    )
+    st.caption(
+        "No AI explanation is available yet. The extracted text above is "
+        "only text taken from your file. It has not been checked or explained."
+    )
+
+
+def assistant_tab(language):
+    st.subheader("AI Assistant")
+    st.markdown('<span class="badge">Coming Soon</span>', unsafe_allow_html=True)
+    st.write(
+        "In a future phase, you will be able to ask questions about your "
+        f"document here in **{language}**."
+    )
+    st.info(
+        "The AI Assistant has not been built yet, so the question box below "
+        "is switched off."
+    )
+    st.text_input(
+        "Ask a question about your document",
+        placeholder="Coming Soon",
+        disabled=True,
+        key="assistant_question_disabled",
+    )
+    st.button("Ask (Coming Soon)", disabled=True, key="assistant_ask_disabled")
+
+
+def about_tab():
+    st.subheader("About JanSahayak AI")
+    st.write(
+        "**JanSahayak** means *a helper of the people*. This project aims to "
+        "help Indian citizens understand complicated government documents and "
+        "forms in simple Bengali, Hindi, and English."
+    )
+    st.markdown("#### Available in Phase 2")
+    st.markdown(
+        """
+        - Upload PDF, JPG, JPEG, and PNG files
+        - Text extraction from PDFs (pypdf) and from scans and photos (Tesseract OCR)
+        - Preview, language selector, and privacy notice
+        """
+    )
+    st.markdown("#### Important")
+    st.markdown(
+        """
+        - Extracted text is **not verified** and may contain mistakes.
+        - Files and text are kept in memory for your session only.
+        """
+    )
+    st.markdown("#### Not built yet")
+    st.markdown(
+        """
+        - AI explanations
+        - AI Assistant chat
+        - Database and login
+        """
+    )
+    show_privacy_warning()
+
+
+# ---------------------------------------------------------------------------
+# Main app
+# ---------------------------------------------------------------------------
+def main():
+    language = st.selectbox(
+        "Language / ভাষা / भाषा",
+        LANGUAGES,
+        key="language_selector",
+    )
+
+    show_hero(TAGLINES[language])
+
+    tab_home, tab_upload, tab_assistant, tab_about = st.tabs(
+        ["🏠 Home", "📄 Upload Document", "🤖 AI Assistant", "ℹ️ About"]
+    )
+
+    with tab_home:
+        home_tab(language)
+    with tab_upload:
+        upload_tab(language)
+    with tab_assistant:
+        assistant_tab(language)
+    with tab_about:
+        about_tab()
+
+
+# Friendly error screen. Only the error TYPE is shown, never document content.
+try:
+    main()
+except Exception as error:
+    st.error("Something went wrong. Please refresh the page and try again.")
+    st.caption(f"Technical detail: {type(error).__name__}")
+
+# END OF FILE (if your GitHub copy does not end with this line, it was cut off)
