@@ -3,3 +3,4 @@ Pillow>=10.0,<12
 pypdf>=4.0
 pytesseract>=0.3.10
 pypdfium2>=4.30
+google-genai
