@@ -43,16 +43,47 @@ def process_document(document_text: str, language: str, task: str, api_key: str)
             "Mark unreadable or ambiguous passages rather than guessing. "
             "Do not add new content."
         )
-    client = genai.Client(api_key=api_key)
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=f"{request}\n\n<document_text>\n{document_text}\n</document_text>",
-        config=types.GenerateContentConfig(
-            system_instruction=instruction,
-            temperature=0.1,
-            max_output_tokens=2500,
-        ),
-    )
-    if not response.text:
-        raise RuntimeError("The AI provider returned no text.")
-    return response.text
+
+    try:
+        client = genai.Client(api_key=api_key)
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=f"{request}\n\n<document_text>\n{document_text}\n</document_text>",
+            config=types.GenerateContentConfig(
+                system_instruction=instruction,
+                temperature=0.1,
+                max_output_tokens=2500,
+            ),
+        )
+
+        if not response.text:
+            raise RuntimeError("The AI provider returned no text.")
+
+        return response.text
+
+    except Exception as e:
+        error_message = str(e)
+        error_type = type(e).__name__
+
+        if "429" in error_message:
+            raise RuntimeError(
+                "Gemini API quota or rate limit exceeded (429)."
+            ) from None
+        elif "404" in error_message:
+            raise RuntimeError(
+                "Gemini model not found or unavailable (404)."
+            ) from None
+        elif "403" in error_message:
+            raise RuntimeError(
+                "Gemini API permission denied (403)."
+            ) from None
+        elif "400" in error_message:
+            raise RuntimeError(
+                "Gemini rejected the request (400)."
+            ) from None
+        else:
+            raise RuntimeError(
+                f"Gemini request failed: {error_type}. "
+                "Check the server logs for details."
+            ) from None
