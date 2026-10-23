@@ -11,7 +11,7 @@ import pytesseract
 import streamlit as st
 from google import genai
 from google.genai import types
-from PIL import Image, ImageOps, ImageDraw, ImageFont
+from PIL import Image, ImageOps
 from pypdf import PdfReader
 
 st.set_page_config(page_title="JanSahayak AI", page_icon="🏛️", layout="centered")
@@ -130,160 +130,6 @@ def extract_pdf(data, lang, force_ocr, has_ocr):
         if rendered is not None:
             rendered.close()
     return "\n\n".join(parts), notes
-
-
-# Phase 3.5: Local OCR-based field highlighting (no Gemini required).
-# These are candidate labels, not a guarantee that the form has been understood.
-FIELD_PATTERNS = [
-    ("name", r"(?:applicant.?s?\s+name|full\s+name|name\s+of\s+applicant|(?:^|\s)name\s*[:：]|আবেদনকারীর\s*নাম|নাম\s*[:：]|आवेदक\s*का\s*नाम|पूरा\s*नाम|नाम\s*[:：])"),
-    ("dob", r"(?:date\s+of\s+birth|birth\s+date|d\.?o\.?b\.?|জন্ম\s*তারিখ|জন্মতারিখ|जन्म\s*तिथि|जन्मतिथि)"),
-    ("address", r"(?:residential\s+address|permanent\s+address|correspondence\s+address|address\s*[:：]|ঠিকানা|पता\s*[:：]|स्थायी\s*पता)"),
-    ("phone", r"(?:mobile\s*(?:number|no\.?|:)|phone\s*(?:number|no\.?|:)|মোবাইল\s*নম্বর|ফোন\s*নম্বর|मोबाइल\s*नंबर|फ़ोन\s*नंबर)"),
-    ("date", r"(?:date\s*[:：]|তারিখ\s*[:：]|दिनांक\s*[:：])"),
-    ("signature", r"(?:signature\s*(?:of\s+applicant)?|স্বাক্ষর|हस्ताक्षर)"),
-    ("gender", r"(?:gender\s*[:：]|sex\s*[:：]|লিঙ্গ\s*[:：]|लिंग\s*[:：])"),
-    ("guardian", r"(?:father.?s\s+name|mother.?s\s+name|guardian.?s\s+name|পিতার\s*নাম|মাতার\s*নাম|পিতা\s*का\s*नाम|माता\s*का\s*नाम|अभिभावक\s*का\s*नाम)"),
-]
-FIELD_PATTERNS.extend([
-    ("email", r"(?:e[- ]?mail(?: address| id)?|ইমেইল|ईमेल)\s*[:：]?"),
-    ("pin", r"(?:pin\s*code|postal\s*code|পিন\s*কোড|पिन\s*कोड)"),
-    ("district", r"(?:district|জেলা|ज़िला|जिला)\s*[:：]?"),
-    ("state", r"(?:state|রাজ্য|राज्य)\s*[:：]?"),
-    ("occupation", r"(?:occupation|profession|পেশা|व्यवसाय)\s*[:：]?"),
-    ("nationality", r"(?:nationality|জাতীয়তা|राष्ट्रीयता)\s*[:：]?"),
-    ("marital", r"(?:marital\s+status|বৈবাহিক\s+অবস্থা|वैवाहिक\s+स्थिति)"),
-    ("id_number", r"(?:identity\s*(?:number|no)|id\s*(?:number|no)|aadhaar|আধার|आधार)\s*[:：]?"),
-    ("application", r"(?:application\s*(?:number|no)|registration\s*(?:number|no)|আবেদন\s*নম্বর|आवेदन\s*संख्या)"),
-    ("bank", r"(?:bank\s*(?:account|name)|ifsc|ব্যাঙ্ক|बैंक)\s*[:：]?"),
-])
-GENERIC_FIELD = {
-    "English": ("Other printed field", "Check the original label and instructions before entering information."),
-    "বাংলা (Bengali)": ("অন্যান্য ফর্মের ঘর", "মূল ফর্মের লেখা ও নির্দেশ দেখে তথ্য পূরণ করুন।"),
-    "हिन्दी (Hindi)": ("फ़ॉर्म का अन्य खाना", "जानकारी भरने से पहले मूल लेबल और निर्देश जाँचें।"),
-}
-
-FIELD_GUIDE = {
-    "English": {
-        "title":"📝 Form filling guide — numbered highlights", "start":"Identify possible fields on the uploaded form", "page":"Form page", "working":"Locating printed form labels...", "notfound":"No recognizable field labels found on this page. Try a clearer scan or a different OCR language.", "unavailable":"OCR is unavailable for highlighting. Check the installed OCR languages.", "limit":"This is an approximate guide based on OCR. Numbers mark detected labels, not necessarily the exact writing boxes. Check the original form before filling anything.", "names":{"name":"Applicant's name", "dob":"Date of birth", "address":"Address", "phone":"Phone/mobile number", "date":"Date", "signature":"Signature", "gender":"Gender", "guardian":"Parent/guardian name"},
-        "tips":{"name":"Write the name requested by this label, using the form's instructions.","dob":"Enter the birth date in the format required on the form.","address":"Enter the type of address specified by the form.","phone":"Enter a contact number only if requested.","date":"Enter the date in the format shown.","signature":"Sign only in the designated area when appropriate.","gender":"Select the option that applies, if requested.","guardian":"Enter the parent or guardian name specified by the label."}},
-    "বাংলা (Bengali)": {
-        "title":"📝 ফর্ম পূরণের নির্দেশিকা — নম্বরসহ চিহ্ন", "start":"আপলোড করা ফর্মে সম্ভাব্য ঘর খুঁজুন", "page":"ফর্মের পৃষ্ঠা", "working":"ফর্মের ছাপানো ঘরগুলি শনাক্ত করা হচ্ছে...", "notfound":"এই পৃষ্ঠায় পরিচিত ঘরের নাম পাওয়া যায়নি। আরও স্পষ্ট ছবি বা অন্য ওসিআর ভাষা বেছে নিন।", "unavailable":"ঘর চিহ্নিত করার জন্য ওসিআর উপলব্ধ নেই।", "limit":"এটি ওসিআর-ভিত্তিক আনুমানিক নির্দেশিকা। নম্বরগুলি ঘরের নাম দেখায়, লেখার সঠিক স্থান নাও হতে পারে। ফর্মের সঙ্গে মিলিয়ে নিন।", "names":{"name":"আবেদনকারীর নাম", "dob":"জন্মতারিখ", "address":"ঠিকানা", "phone":"মোবাইল/ফোন নম্বর", "date":"তারিখ", "signature":"স্বাক্ষর", "gender":"লিঙ্গ", "guardian":"বাবা/মা/অভিভাবকের নাম"},
-        "tips":{"name":"ফর্মের নির্দেশ অনুযায়ী চাওয়া নাম লিখুন।", "dob":"ফর্মে দেওয়া বিন্যাসে জন্মতারিখ লিখুন।", "address":"ফর্মে যে ধরনের ঠিকানা চাওয়া হয়েছে তা লিখুন।", "phone":"চাওয়া হলে যোগাযোগের নম্বর লিখুন।", "date":"নির্দেশ অনুযায়ী তারিখ লিখুন।", "signature":"নির্দিষ্ট স্থানে প্রয়োজন অনুযায়ী স্বাক্ষর করুন।", "gender":"প্রযোজ্য বিকল্পটি নির্বাচন করুন।", "guardian":"যাঁর নাম চাওয়া হয়েছে সেই অভিভাবকের নাম লিখুন।"}},
-    "हिन्दी (Hindi)": {
-        "title":"📝 फ़ॉर्म भरने की मार्गदर्शिका — नंबर वाले निशान", "start":"अपलोड किए गए फ़ॉर्म में संभावित खाने पहचानें", "page":"फ़ॉर्म का पृष्ठ", "working":"फ़ॉर्म के छपे हुए लेबल पहचाने जा रहे हैं...", "notfound":"इस पृष्ठ पर पहचाने जाने वाले फ़ील्ड नहीं मिले। साफ़ स्कैन या दूसरी OCR भाषा आज़माएँ।", "unavailable":"फ़ील्ड चिन्हित करने के लिए OCR उपलब्ध नहीं है।", "limit":"यह OCR पर आधारित अनुमानित मार्गदर्शिका है। नंबर फ़ील्ड के नाम दिखाते हैं, लिखने की सटीक जगह नहीं भी हो सकती। मूल फ़ॉर्म जाँचें।", "names":{"name":"आवेदक का नाम", "dob":"जन्म तिथि", "address":"पता", "phone":"मोबाइल/फ़ोन नंबर", "date":"तारीख", "signature":"हस्ताक्षर", "gender":"लिंग", "guardian":"माता-पिता/अभिभावक का नाम"},
-        "tips":{"name":"फ़ॉर्म के निर्देश के अनुसार माँगा गया नाम लिखें।", "dob":"फ़ॉर्म में बताए प्रारूप में जन्म तिथि लिखें।", "address":"फ़ॉर्म में माँगा गया पता लिखें।", "phone":"माँगे जाने पर संपर्क नंबर लिखें।", "date":"दिए गए प्रारूप में तारीख लिखें।", "signature":"निर्धारित स्थान पर ज़रूरत के अनुसार हस्ताक्षर करें।", "gender":"लागू विकल्प चुनें।", "guardian":"जिस अभिभावक का नाम माँगा गया है, वह लिखें।"}}
-}
-
-
-def form_page_image(data, ext, page_index, rotation):
-    if ext == "pdf":
-        document = pdfium.PdfDocument(data)
-        try:
-            page = document[page_index]
-            try:
-                image = page.render(scale=1.7).to_pil()
-            finally:
-                page.close()
-        finally:
-            document.close()
-        return prep_image(image, "0").convert("RGB")
-    image = Image.open(io.BytesIO(data))
-    image.load()
-    return prep_image(image, rotation).convert("RGB")
-
-
-def identify_fields(image, ocr_lang):
-    """Highlight printed candidate labels, including unrecognized labels ending in a colon."""
-    ocr = pytesseract.image_to_data(image, lang=ocr_lang, timeout=55,
-                                    output_type=pytesseract.Output.DICT)
-    lines = {}
-    for i, word in enumerate(ocr["text"]):
-        if not word.strip():
-            continue
-        try:
-            if float(ocr["conf"][i]) < 20:
-                continue
-        except (ValueError, TypeError):
-            continue
-        group = tuple(ocr[k][i] for k in ("block_num", "par_num", "line_num"))
-        lines.setdefault(group, []).append(i)
-    matches = []
-    for indices in lines.values():
-        line_text = " ".join(ocr["text"][i] for i in indices).strip()
-        if not line_text:
-            continue
-        field = next((field for field, pattern in FIELD_PATTERNS
-                      if re.search(pattern, line_text, re.IGNORECASE)), None)
-        # A generic candidate must resemble a short label, not a paragraph.
-        if field is None and len(line_text) <= 65 and len(line_text.split()) <= 8 and re.search(r"[:：]\s*$", line_text):
-            field = "other"
-        if field is None:
-            continue
-        x1 = min(ocr["left"][i] for i in indices)
-        y1 = min(ocr["top"][i] for i in indices)
-        x2 = max(ocr["left"][i] + ocr["width"][i] for i in indices)
-        y2 = max(ocr["top"][i] + ocr["height"][i] for i in indices)
-        if any(abs(m["y1"] - y1) < 12 and abs(m["x1"] - x1) < 35 for m in matches):
-            continue
-        matches.append(dict(field=field, label=line_text, x1=x1, y1=y1, x2=x2, y2=y2))
-    return sorted(matches, key=lambda m: (m["y1"], m["x1"]))[:60]
-
-
-def draw_field_numbers(image, matches):
-    marked = image.copy()
-    draw = ImageDraw.Draw(marked)
-    font = ImageFont.load_default()
-    for number, m in enumerate(matches, 1):
-        x1,y1,x2,y2 = (m[k] for k in ("x1","y1","x2","y2"))
-        draw.rectangle((x1-3, y1-3, x2+3, y2+3), outline="#d97706", width=4)
-        text = str(number)
-        r = 15
-        cx, cy = min(marked.width-r, x1+r), max(r, y1-r-3)
-        draw.ellipse((cx-r, cy-r, cx+r, cy+r), fill="#b91c1c")
-        box = draw.textbbox((0,0), text, font=font)
-        draw.text((cx-(box[2]-box[0])/2, cy-(box[3]-box[1])/2-1), text, font=font, fill="white")
-    return marked
-
-
-def show_form_guide(data, ext, language, ocr_lang, rotation, file_fingerprint):
-    labels = FIELD_GUIDE[language]
-    st.markdown("#### " + labels["title"])
-    st.caption(labels["limit"])
-    if not ocr_lang:
-        st.warning(labels["unavailable"])
-        return
-    count = 1
-    if ext == "pdf":
-        try:
-            document = pdfium.PdfDocument(data)
-            count = min(len(document), MAX_PAGES)
-            document.close()
-        except Exception:
-            st.warning(labels["notfound"])
-            return
-    page = st.selectbox(labels["page"], list(range(count)), format_func=lambda n: str(n+1), key="form_page") if count > 1 else 0
-    lookup_key = hashlib.sha256((file_fingerprint + str(page) + ocr_lang + rotation).encode()).hexdigest()
-    if st.button(labels["start"], key="form_identify"):
-        with st.spinner(labels["working"]):
-            try:
-                image = form_page_image(data, ext, page, rotation)
-                matches = identify_fields(image, ocr_lang)
-                st.session_state["form_highlights"] = {"key":lookup_key, "image":draw_field_numbers(image, matches), "matches":matches}
-            except Exception:
-                st.warning(labels["notfound"])
-    result = st.session_state.get("form_highlights")
-    if result and result["key"] == lookup_key:
-        if not result["matches"]:
-            st.info(labels["notfound"])
-        else:
-            st.image(result["image"], use_container_width=True)
-            for i, item in enumerate(result["matches"], 1):
-                field = item["field"]
-                if field == "other" or field not in labels["names"]:
-                    title, tip = GENERIC_FIELD[language]
-                    st.markdown(f"**{i}. {title}: {item['label']}** — {tip}")
-                else:
-                    st.markdown(f"**{i}. {labels['names'][field]}** — {labels['tips'][field]}")
 
 
 def gemini_key():
@@ -708,7 +554,6 @@ def upload(language):
     if uploaded is None:
         st.session_state.pop('extraction', None)
         st.session_state.pop('ai_result', None)
-        st.session_state.pop('form_highlights', None)
         st.session_state.pop('chat_history', None)
         st.session_state.pop('chat_doc_key', None)
         st.info(tr(language, 'start'))
@@ -810,7 +655,6 @@ def upload(language):
         st.session_state.pop('chat_doc_key', None)
         st.rerun()
 
-    show_form_guide(data, ext, language, usable, rotation, fingerprint)
 
     st.markdown('#### ' + tr(language, 'aihead'))
     st.caption(tr(language, 'aiprivacy'))
