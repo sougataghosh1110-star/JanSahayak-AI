@@ -226,12 +226,20 @@ def run_ai(text, language, task, progress=None, progress_callback=None):
     # Explanation uses a single request on a short document; longer ones use sections.
     chunks = split_document(text)
     if task == "explain" and len(chunks) > 1:
-        prompt = (f"Summarize this section in simple {target}. Mention only information explicitly "
-                  "present, including relevant fields, dates, fees and uncertainties. "
+        prompt = (f"Explain this document section in simple {target}. "
+                  "IMPORTANT FORMAT: Write a clearly numbered list, using '1.', '2.', '3.' "
+                  "and so on, with ONE distinct point per number. Start with a short heading "
+                  "for this section. Explain what the section says, important fields or actions, "
+                  "dates or fees only if explicitly stated, and uncertainties. "
+                  "Use concise, complete sentences, not one long paragraph. "
                   "Do not assume other sections contain anything. This is part of a larger document.")
     elif task == "explain":
-        prompt = (f"Explain in simple {target}: document type, summary, important fields, "
-                  "explicit dates/fees if any, and what needs verification. "
+        prompt = (f"Explain this document in simple {target}. "
+                  "IMPORTANT FORMAT: Give the explanation as a numbered list: "
+                  "'1.', '2.', '3.' and so on, each on its own line. "
+                  "Cover the document type, purpose, important fields and instructions, "
+                  "explicit dates or fees (only if present), and what needs verification. "
+                  "Use clear, separate points instead of long paragraphs. "
                   "Say if this is not a government document.")
     else:
         prompt = (f"Translate this entire section into {target}. Preserve ALL lines, headings, "
@@ -681,7 +689,7 @@ def upload(language):
             answer, error = run_ai(extracted, language, 'explain' if explain else 'translate',
                                    progress_callback=update_progress)
         progress_bar.empty()
-        st.session_state['ai_result'] = {'answer':answer, 'error':error}
+        st.session_state['ai_result'] = {'answer':answer, 'error':error, 'task':'explain' if explain else 'translate'}
     result = st.session_state.get('ai_result')
     if result:
         if result['error']:
@@ -701,7 +709,10 @@ def upload(language):
                 st.error(localized_api_error(error, language))
         else:
             st.markdown('##### ' + tr(language, 'airesult'))
-            st.write(result['answer'])
+            if result.get('task') == 'explain':
+                st.markdown(result['answer'])
+            else:
+                st.write(result['answer'])
             st.download_button(tr(language, 'download'), result['answer'].encode('utf-8'), 'ai_result.txt', 'text/plain', key='ai_download')
             st.caption(tr(language, 'aiverify'))
 
