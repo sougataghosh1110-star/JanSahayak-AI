@@ -241,156 +241,447 @@ def run_ai(text, language, task):
                   "This can indicate an API endpoint/model compatibility issue.")
 
 
+
+UI = {'English': {'language': 'Language / ভাষা / भाषा',
+             'tagline': 'Understand government documents in simple language',
+             'home': 'Home',
+             'upload': 'Upload Document',
+             'assistant': 'AI Assistant',
+             'about': 'About',
+             'welcome': 'Welcome!',
+             'intro': 'JanSahayak AI helps you understand difficult government documents in simple language.',
+             'features': 'What you can do',
+             'feature1': 'Upload PDF documents or photos',
+             'feature2': 'Read text using OCR',
+             'feature3': 'Explain or translate text using AI',
+             'coming': 'Document-based questions and answers are planned for a future version.',
+             'privacy': '**Privacy:** This is an independent prototype, not an official government service. Upload '
+                        'only fictional or fully redacted documents. AI requests send extracted text to Google. Always '
+                        'verify important information with official sources.',
+             'choose': 'Choose a PDF, JPG, JPEG or PNG file',
+             'start': 'Upload a fictional sample document to begin.',
+             'maxfile': 'Maximum file size is {n} MB.',
+             'empty': 'The uploaded file is empty.',
+             'uploaded': 'Document uploaded successfully.',
+             'file': 'File',
+             'preview': 'Uploaded image',
+             'pdfpreview': 'PDF preview unavailable. You can still extract text.',
+             'imgpreview': 'Image preview unavailable.',
+             'read': 'Read the text',
+             'ocrstatus': 'OCR engine status',
+             'installed': 'Installed OCR languages',
+             'none': 'None',
+             'origlang': 'Language in the original document',
+             'ocroff': 'OCR is unavailable for this language. PDFs with selectable text may still work.',
+             'forceocr': 'Read PDF with OCR instead of selectable text',
+             'rotation': 'Image rotation',
+             'automatic': 'Automatic',
+             'rotate90': '90° right',
+             'rotate180': '180°',
+             'rotate270': '90° left',
+             'extract': 'Extract text',
+             'reading': 'Reading the document...',
+             'ocrimage': 'Image OCR is unavailable on this server.',
+             'readfail': 'Document reading failed ({error}). Try another sample file.',
+             'tapextract': 'Tap Extract text to read this document.',
+             'notext': 'No readable text found. Try a clearer document or another OCR language.',
+             'extracted': 'Extracted text (not verified)',
+             'original': 'Original text',
+             'download': 'Download extracted text',
+             'clear': 'Clear extracted text',
+             'aihead': 'AI explanation and translation',
+             'aiprivacy': 'Use only fictional or fully redacted text. The AI request sends text to Google.',
+             'missingkey': 'Add GEMINI_API_KEY in Streamlit Community Cloud → Settings → Secrets.',
+             'toolong': 'AI demo supports up to {n} characters.',
+             'explain': 'Explain this document',
+             'translate': 'Translate document',
+             'asking': 'Asking Gemini...',
+             'airesult': 'AI result',
+             'aiverify': 'AI can make mistakes. Verify the result against the original document and official sources.',
+             'ask': 'Ask a question',
+             'soon': 'Coming soon',
+             'abouttext': 'An independent educational prototype to help people understand documents in Indian '
+                          'languages.',
+             'notgov': 'Not affiliated with or endorsed by any government agency.',
+             'error': 'Unexpected application error. Please try again.',
+             'errortype': 'Error type',
+             'page': 'Page',
+             'onlypages': 'Only the first {limit} of {total} pages were processed.',
+             'timeout': 'Stopped after the 90-second processing limit.',
+             'ocrpage': 'OCR could not read page {page}.',
+             'needocr': 'Page {page} may need OCR, which is unavailable.',
+             'api404': 'Gemini 404: The requested model is unavailable.',
+             'api503': 'Gemini 503: Google’s service is temporarily unavailable. Try again later.',
+             'api429': 'Gemini 429: API quota or rate limit reached.',
+             'api403': 'Gemini 403: API access denied.',
+             'api400': 'Gemini 400: Request rejected.',
+             'apiother': 'AI request failed. Check the API connection and model availability.',
+             'modeldiscovery': 'Could not retrieve available AI models.',
+             'nomodel': 'No compatible Gemini text model was available.',
+             'failed': 'AI generation failed with {model}.',
+             'retry': 'Please try again later.',
+             'protected': 'This PDF is password-protected.',
+             'nopages': 'This PDF has no pages.',
+             'noanswer': 'The AI returned no text.'},
+ 'বাংলা (Bengali)': {'language': 'ভাষা নির্বাচন করুন',
+                     'tagline': 'সরকারি নথি সহজ বাংলায় বুঝুন',
+                     'home': 'প্রথম পাতা',
+                     'upload': 'নথি আপলোড',
+                     'assistant': 'এআই সহায়ক',
+                     'about': 'পরিচিতি',
+                     'welcome': 'স্বাগতম!',
+                     'intro': 'জনসহায়ক এআই কঠিন সরকারি নথি সহজ ভাষায় বুঝতে সাহায্য করে।',
+                     'features': 'এখানে যা করতে পারবেন',
+                     'feature1': 'পিডিএফ বা নথির ছবি আপলোড করুন',
+                     'feature2': 'ওসিআর দিয়ে ছবির লেখা পড়ুন',
+                     'feature3': 'এআই দিয়ে লেখা ব্যাখ্যা বা অনুবাদ করুন',
+                     'coming': 'নথি সম্পর্কে প্রশ্নোত্তরের সুবিধা পরবর্তী সংস্করণে আসবে।',
+                     'privacy': '**গোপনীয়তা:** এটি একটি স্বাধীন পরীক্ষামূলক অ্যাপ, সরকারি পরিষেবা নয়। শুধু কাল্পনিক '
+                                'বা ব্যক্তিগত তথ্য মুছে দেওয়া নথি আপলোড করুন। এআই ব্যবহার করলে লেখাটি গুগলের '
+                                'পরিষেবায় পাঠানো হবে। গুরুত্বপূর্ণ তথ্য সরকারি সূত্রে যাচাই করুন।',
+                     'choose': 'পিডিএফ, জেপিজি বা পিএনজি নথি বেছে নিন',
+                     'start': 'শুরু করতে একটি নমুনা নথি আপলোড করুন।',
+                     'maxfile': 'ফাইলের সর্বোচ্চ আকার {n} এমবি।',
+                     'empty': 'আপলোড করা ফাইলটি খালি।',
+                     'uploaded': 'নথি সফলভাবে আপলোড হয়েছে।',
+                     'file': 'ফাইল',
+                     'preview': 'আপলোড করা ছবি',
+                     'pdfpreview': 'পিডিএফের পূর্বরূপ দেখা যাচ্ছে না। তবুও লেখা বের করা যাবে।',
+                     'imgpreview': 'ছবির পূর্বরূপ দেখা যাচ্ছে না।',
+                     'read': 'নথির লেখা পড়ুন',
+                     'ocrstatus': 'ওসিআর-এর অবস্থা',
+                     'installed': 'ইনস্টল করা ওসিআর ভাষা',
+                     'none': 'কোনোটিই নয়',
+                     'origlang': 'নথিটি কোন ভাষায় লেখা?',
+                     'ocroff': 'এই ভাষার জন্য ওসিআর উপলব্ধ নয়। লেখা নির্বাচন করা যায় এমন পিডিএফ কাজ করতে পারে।',
+                     'forceocr': 'পিডিএফের লেখা সরাসরি না পড়ে ওসিআর ব্যবহার করুন',
+                     'rotation': 'ছবি ঘোরানোর বিকল্প',
+                     'automatic': 'স্বয়ংক্রিয়',
+                     'rotate90': 'ডানে ৯০°',
+                     'rotate180': '১৮০°',
+                     'rotate270': 'বাঁয়ে ৯০°',
+                     'extract': 'লেখা বের করুন',
+                     'reading': 'নথির লেখা পড়া হচ্ছে...',
+                     'ocrimage': 'এই সার্ভারে ছবির ওসিআর উপলব্ধ নয়।',
+                     'readfail': 'নথি পড়া যায়নি ({error})। অন্য নমুনা ফাইল ব্যবহার করুন।',
+                     'tapextract': 'লেখা পড়তে ‘লেখা বের করুন’ বোতামে চাপ দিন।',
+                     'notext': 'কোনো লেখা পাওয়া যায়নি। পরিষ্কার নথি বা অন্য ওসিআর ভাষা বেছে নিন।',
+                     'extracted': 'নথি থেকে পাওয়া লেখা (যাচাই করা হয়নি)',
+                     'original': 'মূল লেখা',
+                     'download': 'লেখা ডাউনলোড করুন',
+                     'clear': 'বের করা লেখা মুছুন',
+                     'aihead': 'এআই দিয়ে ব্যাখ্যা ও অনুবাদ',
+                     'aiprivacy': 'শুধু কাল্পনিক বা ব্যক্তিগত তথ্য মুছে দেওয়া লেখা ব্যবহার করুন। এআই ব্যবহার করলে '
+                                  'লেখাটি গুগলে পাঠানো হবে।',
+                     'missingkey': 'Streamlit Community Cloud → Settings → Secrets-এ GEMINI_API_KEY যোগ করুন।',
+                     'toolong': 'এআই সর্বোচ্চ {n} অক্ষর পর্যন্ত গ্রহণ করে।',
+                     'explain': 'এই নথি সহজভাবে বুঝিয়ে দিন',
+                     'translate': 'নথিটি অনুবাদ করুন',
+                     'asking': 'এআই উত্তর তৈরি করছে...',
+                     'airesult': 'এআই-এর উত্তর',
+                     'aiverify': 'এআই ভুল করতে পারে। মূল নথি ও সরকারি সূত্রের সঙ্গে মিলিয়ে নিন।',
+                     'ask': 'নথি সম্পর্কে প্রশ্ন করুন',
+                     'soon': 'শীঘ্রই আসছে',
+                     'abouttext': 'ভারতীয় ভাষায় নথি বুঝতে সাহায্য করার জন্য তৈরি একটি স্বাধীন শিক্ষামূলক অ্যাপ।',
+                     'notgov': 'কোনো সরকারি সংস্থার সঙ্গে যুক্ত বা অনুমোদিত নয়।',
+                     'error': 'অ্যাপে সমস্যা হয়েছে। আবার চেষ্টা করুন।',
+                     'errortype': 'সমস্যার ধরন',
+                     'page': 'পৃষ্ঠা',
+                     'onlypages': 'মোট {total} পৃষ্ঠার মধ্যে প্রথম {limit}টি পড়া হয়েছে।',
+                     'timeout': '৯০ সেকেন্ডের সময়সীমা শেষ হওয়ায় পড়া বন্ধ হয়েছে।',
+                     'ocrpage': '{page} নম্বর পৃষ্ঠার লেখা ওসিআর দিয়ে পড়া যায়নি।',
+                     'needocr': '{page} নম্বর পৃষ্ঠায় ওসিআর দরকার হতে পারে, কিন্তু তা উপলব্ধ নয়।',
+                     'api404': 'জেমিনি ৪০৪: অনুরোধ করা এআই মডেল উপলব্ধ নয়।',
+                     'api503': 'জেমিনি ৫০৩: গুগলের পরিষেবা সাময়িকভাবে অনুপলব্ধ। পরে চেষ্টা করুন।',
+                     'api429': 'জেমিনি ৪২৯: এপিআই ব্যবহারের সীমা শেষ হয়েছে।',
+                     'api403': 'জেমিনি ৪০৩: এপিআই ব্যবহারের অনুমতি নেই।',
+                     'api400': 'জেমিনি ৪০০: অনুরোধ গ্রহণ করা হয়নি।',
+                     'apiother': 'এআই অনুরোধ ব্যর্থ হয়েছে। এপিআই সংযোগ ও মডেল পরীক্ষা করুন।',
+                     'modeldiscovery': 'উপলব্ধ এআই মডেলের তালিকা পাওয়া যায়নি।',
+                     'nomodel': 'উপযুক্ত জেমিনি টেক্সট মডেল পাওয়া যায়নি।',
+                     'failed': '{model} মডেলে এআই উত্তর তৈরি করা যায়নি।',
+                     'retry': 'পরে আবার চেষ্টা করুন।',
+                     'protected': 'এই পিডিএফ পাসওয়ার্ড দিয়ে সুরক্ষিত।',
+                     'nopages': 'এই পিডিএফে কোনো পৃষ্ঠা নেই।',
+                     'noanswer': 'এআই কোনো উত্তর দেয়নি।'},
+ 'हिन्दी (Hindi)': {'language': 'भाषा चुनें',
+                    'tagline': 'सरकारी दस्तावेज़ सरल हिंदी में समझें',
+                    'home': 'मुख्य पृष्ठ',
+                    'upload': 'दस्तावेज़ अपलोड करें',
+                    'assistant': 'एआई सहायक',
+                    'about': 'परिचय',
+                    'welcome': 'स्वागत है!',
+                    'intro': 'जनसहायक एआई कठिन सरकारी दस्तावेज़ों को सरल भाषा में समझने में मदद करता है।',
+                    'features': 'आप यहाँ क्या कर सकते हैं',
+                    'feature1': 'पीडीएफ या दस्तावेज़ की फोटो अपलोड करें',
+                    'feature2': 'ओसीआर से फोटो का पाठ पढ़ें',
+                    'feature3': 'एआई से पाठ की व्याख्या या अनुवाद करें',
+                    'coming': 'दस्तावेज़ के बारे में सवाल-जवाब की सुविधा अगले संस्करण में आएगी।',
+                    'privacy': '**गोपनीयता:** यह एक स्वतंत्र परीक्षण ऐप है, सरकारी सेवा नहीं। केवल काल्पनिक या निजी '
+                               'जानकारी हटाए हुए दस्तावेज़ अपलोड करें। एआई उपयोग करने पर निकाला गया पाठ गूगल की सेवा '
+                               'को भेजा जाएगा। महत्वपूर्ण जानकारी सरकारी स्रोतों से जाँचें।',
+                    'choose': 'पीडीएफ, जेपीजी या पीएनजी दस्तावेज़ चुनें',
+                    'start': 'शुरू करने के लिए एक नमूना दस्तावेज़ अपलोड करें।',
+                    'maxfile': 'फ़ाइल का अधिकतम आकार {n} एमबी है।',
+                    'empty': 'अपलोड की गई फ़ाइल खाली है।',
+                    'uploaded': 'दस्तावेज़ सफलतापूर्वक अपलोड हुआ।',
+                    'file': 'फ़ाइल',
+                    'preview': 'अपलोड की गई फोटो',
+                    'pdfpreview': 'पीडीएफ का पूर्वावलोकन उपलब्ध नहीं है। फिर भी पाठ निकाला जा सकता है।',
+                    'imgpreview': 'फोटो का पूर्वावलोकन उपलब्ध नहीं है।',
+                    'read': 'दस्तावेज़ का पाठ पढ़ें',
+                    'ocrstatus': 'ओसीआर की स्थिति',
+                    'installed': 'उपलब्ध ओसीआर भाषाएँ',
+                    'none': 'कोई नहीं',
+                    'origlang': 'मूल दस्तावेज़ किस भाषा में है?',
+                    'ocroff': 'इस भाषा के लिए ओसीआर उपलब्ध नहीं है। चयन योग्य पाठ वाली पीडीएफ फिर भी काम कर सकती है।',
+                    'forceocr': 'पीडीएफ का पाठ सीधे पढ़ने के बजाय ओसीआर इस्तेमाल करें',
+                    'rotation': 'फोटो घुमाने का विकल्प',
+                    'automatic': 'स्वचालित',
+                    'rotate90': 'दाएँ ९०°',
+                    'rotate180': '१८०°',
+                    'rotate270': 'बाएँ ९०°',
+                    'extract': 'पाठ निकालें',
+                    'reading': 'दस्तावेज़ पढ़ा जा रहा है...',
+                    'ocrimage': 'इस सर्वर पर फोटो का ओसीआर उपलब्ध नहीं है।',
+                    'readfail': 'दस्तावेज़ नहीं पढ़ा जा सका ({error})। दूसरी नमूना फ़ाइल चुनें।',
+                    'tapextract': 'पाठ पढ़ने के लिए ‘पाठ निकालें’ दबाएँ।',
+                    'notext': 'कोई पाठ नहीं मिला। साफ़ दस्तावेज़ या दूसरी ओसीआर भाषा चुनें।',
+                    'extracted': 'दस्तावेज़ से निकाला गया पाठ (सत्यापित नहीं)',
+                    'original': 'मूल पाठ',
+                    'download': 'निकाला गया पाठ डाउनलोड करें',
+                    'clear': 'निकाला गया पाठ हटाएँ',
+                    'aihead': 'एआई से व्याख्या और अनुवाद',
+                    'aiprivacy': 'केवल काल्पनिक या निजी जानकारी हटाया हुआ पाठ उपयोग करें। एआई अनुरोध पर पाठ गूगल को '
+                                 'भेजा जाता है।',
+                    'missingkey': 'Streamlit Community Cloud → Settings → Secrets में GEMINI_API_KEY जोड़ें।',
+                    'toolong': 'एआई अधिकतम {n} अक्षर स्वीकार करता है।',
+                    'explain': 'यह दस्तावेज़ सरल भाषा में समझाएँ',
+                    'translate': 'दस्तावेज़ का अनुवाद करें',
+                    'asking': 'एआई उत्तर तैयार कर रहा है...',
+                    'airesult': 'एआई का उत्तर',
+                    'aiverify': 'एआई से गलतियाँ हो सकती हैं। मूल दस्तावेज़ और सरकारी स्रोतों से जाँचें।',
+                    'ask': 'दस्तावेज़ के बारे में प्रश्न पूछें',
+                    'soon': 'जल्द आ रहा है',
+                    'abouttext': 'भारतीय भाषाओं में दस्तावेज़ समझने में मदद करने वाला स्वतंत्र शैक्षिक ऐप।',
+                    'notgov': 'यह किसी सरकारी संस्था से संबद्ध या अनुमोदित नहीं है।',
+                    'error': 'ऐप में समस्या आई। कृपया फिर कोशिश करें।',
+                    'errortype': 'समस्या का प्रकार',
+                    'page': 'पृष्ठ',
+                    'onlypages': 'कुल {total} पृष्ठों में से पहले {limit} पढ़े गए।',
+                    'timeout': '९० सेकंड की सीमा पूरी होने पर पढ़ना बंद हुआ।',
+                    'ocrpage': 'पृष्ठ {page} को ओसीआर से नहीं पढ़ा जा सका।',
+                    'needocr': 'पृष्ठ {page} को ओसीआर की आवश्यकता हो सकती है, लेकिन यह उपलब्ध नहीं है।',
+                    'api404': 'जेमिनी ४०४: माँगा गया एआई मॉडल उपलब्ध नहीं है।',
+                    'api503': 'जेमिनी ५०३: गूगल की सेवा अस्थायी रूप से अनुपलब्ध है। बाद में प्रयास करें।',
+                    'api429': 'जेमिनी ४२९: एपीआई की उपयोग सीमा पूरी हो गई है।',
+                    'api403': 'जेमिनी ४०३: एपीआई उपयोग की अनुमति नहीं है।',
+                    'api400': 'जेमिनी ४००: अनुरोध स्वीकार नहीं हुआ।',
+                    'apiother': 'एआई अनुरोध विफल हुआ। एपीआई कनेक्शन और मॉडल जाँचें।',
+                    'modeldiscovery': 'उपलब्ध एआई मॉडल की सूची नहीं मिल सकी।',
+                    'nomodel': 'उपयुक्त जेमिनी टेक्स्ट मॉडल नहीं मिला।',
+                    'failed': '{model} मॉडल से एआई उत्तर नहीं बन सका।',
+                    'retry': 'बाद में फिर कोशिश करें।',
+                    'protected': 'यह पीडीएफ पासवर्ड से सुरक्षित है।',
+                    'nopages': 'इस पीडीएफ में कोई पृष्ठ नहीं है।',
+                    'noanswer': 'एआई ने कोई उत्तर नहीं दिया।'}}
+
+
+def tr(language, key, **kwargs):
+    return UI[language][key].format(**kwargs)
+
+
+def localized_api_error(message, language):
+    code = re.search(r"\b(400|401|403|404|429|500|503)\b", message)
+    if code:
+        mapping = {'400':'api400', '401':'api403', '403':'api403', '404':'api404', '429':'api429', '500':'api503', '503':'api503'}
+        return tr(language, mapping[code.group(1)])
+    return tr(language, 'apiother')
+
+
 def home(language):
-    st.subheader("Welcome!")
-    st.write("JanSahayak AI helps explain complicated documents in simple English, Bengali or Hindi.")
-    st.write("**Features:** PDF reading, image OCR, AI explanations and translations.")
-    st.write("**Coming later:** document-based interactive chat.")
-    privacy_notice()
+    st.subheader(tr(language, 'welcome'))
+    st.write(tr(language, 'intro'))
+    st.markdown('#### ' + tr(language, 'features'))
+    for key in ('feature1', 'feature2', 'feature3'):
+        st.write('• ' + tr(language, key))
+    st.info(tr(language, 'coming'))
+    st.warning(tr(language, 'privacy'))
 
 
 def upload(language):
-    st.subheader("Upload Document")
-    privacy_notice()
-    uploaded = st.file_uploader("Choose a PDF, JPG, JPEG or PNG", type=["pdf", "jpg", "jpeg", "png"])
+    st.subheader(tr(language, 'upload'))
+    st.warning(tr(language, 'privacy'))
+    uploaded = st.file_uploader(tr(language, 'choose'), type=['pdf','jpg','jpeg','png'])
     if uploaded is None:
-        st.session_state.pop("extraction", None)
-        st.session_state.pop("ai_result", None)
-        st.info("Upload a fictional sample document to begin.")
+        st.session_state.pop('extraction', None)
+        st.session_state.pop('ai_result', None)
+        st.info(tr(language, 'start'))
         return
     if uploaded.size > MAX_FILE_MB * 1024 * 1024:
-        st.error(f"Maximum file size is {MAX_FILE_MB} MB.")
+        st.error(tr(language, 'maxfile', n=MAX_FILE_MB))
         return
     data = uploaded.getvalue()
     if not data:
-        st.error("The uploaded file is empty.")
+        st.error(tr(language, 'empty'))
         return
-    ext = uploaded.name.rsplit(".", 1)[-1].lower()
-    st.success("Document uploaded successfully.")
-    st.caption(f"File: {uploaded.name} · {uploaded.size / 1024:.1f} KB")
-    if ext == "pdf":
+    ext = uploaded.name.rsplit('.', 1)[-1].lower()
+    st.success(tr(language, 'uploaded'))
+    st.caption(f"{tr(language, 'file')}: {uploaded.name} · {uploaded.size/1024:.1f} KB")
+    if ext == 'pdf':
         try:
             st.pdf(uploaded, height=450)
         except Exception:
-            st.info("PDF preview unavailable. You can still extract text.")
+            st.info(tr(language, 'pdfpreview'))
     else:
         try:
-            st.image(Image.open(io.BytesIO(data)), caption="Uploaded image")
+            st.image(Image.open(io.BytesIO(data)), caption=tr(language, 'preview'))
         except Exception:
-            st.warning("Image preview unavailable.")
+            st.warning(tr(language, 'imgpreview'))
 
-    st.markdown("#### Read the text")
+    st.markdown('#### ' + tr(language, 'read'))
     installed = ocr_languages()
-    with st.expander("OCR engine status"):
-        st.write("Installed OCR languages:", ", ".join(installed) if installed else "None")
+    with st.expander(tr(language, 'ocrstatus')):
+        st.write(tr(language, 'installed') + ': ' + (', '.join(installed) if installed else tr(language, 'none')))
+    # OCR choices are translated while keeping stable language codes.
+    ocr_options = [
+        ('eng', 'English' if language == LANGUAGES[0] else ('ইংরেজি' if language == LANGUAGES[1] else 'अंग्रेज़ी')),
+        ('ben+eng', 'Bengali + English' if language == LANGUAGES[0] else ('বাংলা + ইংরেজি' if language == LANGUAGES[1] else 'बंगाली + अंग्रेज़ी')),
+        ('hin+eng', 'Hindi + English' if language == LANGUAGES[0] else ('হিন্দি + ইংরেজি' if language == LANGUAGES[1] else 'हिंदी + अंग्रेज़ी')),
+        ('ben+hin+eng', 'All three' if language == LANGUAGES[0] else ('তিনটি ভাষাই' if language == LANGUAGES[1] else 'तीनों भाषाएँ')),
+    ]
     default = 1 if language == LANGUAGES[1] else 2 if language == LANGUAGES[2] else 0
-    ocr_label = st.selectbox("Language in the original document", list(OCR_CHOICES), index=default)
-    chosen = OCR_CHOICES[ocr_label]
-    usable = "+".join(x for x in chosen.split("+") if x in installed)
+    chosen = st.selectbox(tr(language, 'origlang'), [x[0] for x in ocr_options], index=default,
+                          format_func=lambda code: dict(ocr_options)[code])
+    usable = '+'.join(x for x in chosen.split('+') if x in installed)
     if not usable:
-        st.warning("OCR is unavailable for the selected language. PDFs with selectable text may still work.")
-    rotation = "Automatic"
+        st.warning(tr(language, 'ocroff'))
+    rotation = 'Automatic'
     force_ocr = False
-    if ext == "pdf":
-        force_ocr = st.checkbox("Read PDF with OCR instead of selectable text")
+    if ext == 'pdf':
+        force_ocr = st.checkbox(tr(language, 'forceocr'))
     else:
-        rotation = st.selectbox("Image rotation", ["Automatic", "90", "180", "270"])
-    fingerprint = hashlib.sha256(data + repr((ocr_label, rotation, force_ocr)).encode()).hexdigest()
-    if st.button("Extract text", type="primary"):
-        with st.spinner("Reading the document..."):
+        rotation_options = {'Automatic':tr(language, 'automatic'), '90':tr(language, 'rotate90'),
+                            '180':tr(language, 'rotate180'), '270':tr(language, 'rotate270')}
+        rotation = st.selectbox(tr(language, 'rotation'), list(rotation_options),
+                                format_func=lambda x: rotation_options[x])
+    fingerprint = hashlib.sha256(data + repr((chosen, rotation, force_ocr)).encode()).hexdigest()
+    if st.button(tr(language, 'extract'), type='primary'):
+        with st.spinner(tr(language, 'reading')):
             try:
-                if ext == "pdf":
-                    text, notes = extract_pdf(data, usable, force_ocr, bool(usable))
+                if ext == 'pdf':
+                    extracted, notes = extract_pdf(data, usable, force_ocr, bool(usable))
                 elif usable:
-                    text, notes = extract_image(data, usable, rotation), []
+                    extracted, notes = extract_image(data, usable, rotation), []
                 else:
-                    text, notes = "", ["Image OCR is unavailable on this server."]
-                st.session_state["extraction"] = {"key": fingerprint, "text": text, "notes": notes}
-                st.session_state.pop("ai_result", None)
+                    extracted, notes = '', [tr(language, 'ocrimage')]
+                st.session_state['extraction'] = {'key':fingerprint, 'text':extracted, 'notes':notes}
+                st.session_state.pop('ai_result', None)
             except Exception as exc:
-                st.error(f"Document reading failed ({type(exc).__name__}). Try another sample file.")
-    saved = st.session_state.get("extraction")
-    if not saved or saved["key"] != fingerprint:
-        st.info("Tap Extract text to read this document.")
+                st.error(tr(language, 'readfail', error=type(exc).__name__))
+    saved = st.session_state.get('extraction')
+    if not saved or saved['key'] != fingerprint:
+        st.info(tr(language, 'tapextract'))
         return
-    for note in saved["notes"]:
+    for note in saved['notes']:
+        # Backend OCR notes are translated into the selected UI language.
+        match = re.search(r'Only the first (\d+) of (\d+) pages', note)
+        if match:
+            note = tr(language, 'onlypages', limit=match.group(1), total=match.group(2))
+        elif '90-second processing limit' in note:
+            note = tr(language, 'timeout')
+        else:
+            match = re.search(r'OCR could not read page (\d+)', note)
+            if match:
+                note = tr(language, 'ocrpage', page=match.group(1))
+            else:
+                match = re.search(r'Page (\d+) may need OCR', note)
+                if match:
+                    note = tr(language, 'needocr', page=match.group(1))
         st.warning(note)
-    text = saved["text"]
-    if not text:
-        st.warning("No readable text found. Try a clearer document or another OCR language.")
+    extracted = saved['text']
+    if not extracted:
+        st.warning(tr(language, 'notext'))
         return
-    st.markdown("#### Extracted text (not verified)")
-    st.text_area("Original text", value=text, height=300)
-    st.download_button("Download extracted text", text.encode("utf-8"), "extracted_text.txt", "text/plain")
-    if st.button("Clear extracted text"):
-        st.session_state.pop("extraction", None)
-        st.session_state.pop("ai_result", None)
+    st.markdown('#### ' + tr(language, 'extracted'))
+    st.text_area(tr(language, 'original'), value=extracted, height=300)
+    st.download_button(tr(language, 'download'), extracted.encode('utf-8'), 'extracted_text.txt', 'text/plain')
+    if st.button(tr(language, 'clear')):
+        st.session_state.pop('extraction', None)
+        st.session_state.pop('ai_result', None)
         st.rerun()
 
-    st.markdown("#### AI explanation and translation")
-    st.caption("Only click an AI button with fictional or fully redacted text. Your text is sent to Google.")
+    st.markdown('#### ' + tr(language, 'aihead'))
+    st.caption(tr(language, 'aiprivacy'))
     if not gemini_key():
-        st.warning("Set GEMINI_API_KEY in Streamlit Community Cloud → Settings → Secrets.")
+        st.warning(tr(language, 'missingkey'))
         return
-    if len(text) > MAX_AI_CHARS:
-        st.warning(f"AI demo supports up to {MAX_AI_CHARS} characters.")
+    if len(extracted) > MAX_AI_CHARS:
+        st.warning(tr(language, 'toolong', n=MAX_AI_CHARS))
         return
     ai_key = hashlib.sha256((fingerprint + language).encode()).hexdigest()
-    if st.session_state.get("ai_key") != ai_key:
-        st.session_state.pop("ai_result", None)
-        st.session_state["ai_key"] = ai_key
-    a, b = st.columns(2)
-    with a:
-        explain = st.button("Explain this document", use_container_width=True)
-    with b:
-        translate = st.button("Translate document", use_container_width=True)
+    if st.session_state.get('ai_key') != ai_key:
+        st.session_state.pop('ai_result', None)
+        st.session_state['ai_key'] = ai_key
+    left, right = st.columns(2)
+    with left:
+        explain = st.button(tr(language, 'explain'), use_container_width=True)
+    with right:
+        translate = st.button(tr(language, 'translate'), use_container_width=True)
     if explain or translate:
-        with st.spinner("Asking Gemini..."):
-            answer, error = run_ai(text, language, "explain" if explain else "translate")
-        st.session_state["ai_result"] = {"answer": answer, "error": error}
-    result = st.session_state.get("ai_result")
+        with st.spinner(tr(language, 'asking')):
+            answer, error = run_ai(extracted, language, 'explain' if explain else 'translate')
+        st.session_state['ai_result'] = {'answer':answer, 'error':error}
+    result = st.session_state.get('ai_result')
     if result:
-        if result["error"]:
-            st.error(result["error"])
+        if result['error']:
+            error = result['error']
+            if error.startswith('Model discovery failed'):
+                st.error(tr(language, 'modeldiscovery') + ' ' + localized_api_error(error, language))
+            elif 'no compatible Gemini Flash' in error:
+                st.error(tr(language, 'nomodel'))
+            elif error.startswith('Generation failed'):
+                model = re.search(r'Generation failed using (\S+)', error)
+                st.error(tr(language, 'failed', model=model.group(1) if model else 'Gemini') + ' ' + localized_api_error(error, language))
+            else:
+                st.error(localized_api_error(error, language))
         else:
-            st.markdown("##### AI result")
-            st.write(result["answer"])
-            st.caption("AI can make mistakes. Verify details against the original and official sources.")
+            st.markdown('##### ' + tr(language, 'airesult'))
+            st.write(result['answer'])
+            st.caption(tr(language, 'aiverify'))
 
 
 def assistant(language):
-    st.subheader("AI Assistant")
-    st.info("Document-based question answering is planned for Phase 4.")
-    st.text_input("Ask a question", disabled=True, placeholder="Coming soon")
+    st.subheader(tr(language, 'assistant'))
+    st.info(tr(language, 'coming'))
+    st.text_input(tr(language, 'ask'), disabled=True, placeholder=tr(language, 'soon'))
 
 
-def about():
-    st.subheader("About JanSahayak AI")
-    st.write("An independent educational prototype to help people understand documents in Indian languages.")
-    st.write("Not affiliated with or endorsed by any government agency.")
-    privacy_notice()
+def about(language):
+    st.subheader(tr(language, 'about'))
+    st.write(tr(language, 'abouttext'))
+    st.write(tr(language, 'notgov'))
+    st.warning(tr(language, 'privacy'))
 
 
 def main():
-    language = st.selectbox("Language / ভাষা / भाषा", LANGUAGES)
-    tagline = {LANGUAGES[0]: "Understand documents in simple language",
-               LANGUAGES[1]: "সরকারি নথি সহজ ভাষায় বুঝুন",
-               LANGUAGES[2]: "सरकारी दस्तावेज़ सरल भाषा में समझें"}[language]
-    st.markdown(f'<div class="hero"><h1>🏛️ JanSahayak AI</h1><p>{tagline}</p></div>', unsafe_allow_html=True)
-    t1, t2, t3, t4 = st.tabs(["🏠 Home", "📄 Upload Document", "🤖 AI Assistant", "ℹ️ About"])
-    with t1:
-        home(language)
-    with t2:
-        upload(language)
-    with t3:
-        assistant(language)
-    with t4:
-        about()
+    language = st.selectbox('Language / ভাষা / भाषा', LANGUAGES,
+                            format_func=lambda x: {'English':'English', 'বাংলা (Bengali)':'বাংলা', 'हिन्दी (Hindi)':'हिन्दी'}[x],
+                            key='language_selector')
+    st.markdown(f'<div class="hero"><h1>🏛️ JanSahayak AI</h1><p>{tr(language, "tagline")}</p></div>',
+                unsafe_allow_html=True)
+    t1,t2,t3,t4 = st.tabs(['🏠 '+tr(language,'home'), '📄 '+tr(language,'upload'),
+                           '🤖 '+tr(language,'assistant'), 'ℹ️ '+tr(language,'about')])
+    with t1: home(language)
+    with t2: upload(language)
+    with t3: assistant(language)
+    with t4: about(language)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         main()
     except Exception as exc:
-        st.error("Unexpected application error. Please try again.")
-        st.caption(f"Error type: {type(exc).__name__}")
+        language = st.session_state.get('language_selector', LANGUAGES[0])
+        st.error(tr(language, 'error'))
+        st.caption(f"{tr(language, 'errortype')}: {type(exc).__name__}")
