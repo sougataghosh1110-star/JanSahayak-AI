@@ -24,7 +24,7 @@ OCR_CHOICES = {"English": "eng", "Bengali + English": "ben+eng", "Hindi + Englis
 MAX_FILE_MB = 8
 MAX_PAGES = 10
 MAX_AI_CHARS = 14000
-AI_MODEL = "gemini-2.5-flash"
+PREFERRED_MODELS = ("gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash")
 
 st.markdown("""<style>.block-container{padding-top:1.2rem;max-width:850px}
 .hero{background:linear-gradient(110deg,#12335f,#25609b);padding:1.25rem;border-left:7px solid #ff9933;border-radius:12px;color:white;margin-bottom:1rem}
@@ -188,15 +188,45 @@ def run_ai(text, language, task):
                   "structure. Mark unreadable parts [unclear]. Do not add facts.")
     try:
         client = genai.Client(api_key=key, http_options=types.HttpOptions(timeout=45000))
-        response = client.models.generate_content(
-            model=AI_MODEL,
-            contents=prompt + "\n\n<untrusted_document>\n" + text + "\n</untrusted_document>",
-            config=types.GenerateContentConfig(
-                system_instruction=instruction, temperature=0.1, max_output_tokens=3000
-            ),
-        )
-        answer = (response.text or "").strip()
-        return (answer, None) if answer else (None, "Gemini returned an empty response.")
+        # Discover models available to THIS API key rather than assuming one works.
+        models = list(client.models.list())
+        available = {}
+        for model in models:
+            name = getattr(model, "name", "") or ""
+            actions = getattr(model, "supported_actions", None)
+            if name and (actions is None or "generateContent" in actions):
+                short_name = name.removeprefix("models/")
+                available[short_name] = name
+        choices = [available[name] for name in PREFERRED_MODELS if name in available]
+        if not choices:
+            choices = [full for short, full in available.items()
+                       if short.startswith("gemini-") and "flash" in short
+                       and "image" not in short and "tts" not in short][:3]
+        if not choices:
+            return None, ("No compatible Gemini text-generation model was returned "
+                          "for this API key. Check model access in Google AI Studio.")
+
+        last_error = None
+        for model_name in choices:
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=prompt + "\n\n<untrusted_document>\n" + text + "\n</untrusted_document>",
+                    config=types.GenerateContentConfig(
+                        system_instruction=instruction,
+                        temperature=0.1,
+                        max_output_tokens=3000,
+                    ),
+                )
+                answer = (response.text or "").strip()
+                return ((answer, None) if answer else
+                        (None, "Gemini returned an empty response."))
+            except Exception as exc:
+                last_error = exc
+                # Only try another model if this model/endpoint was not found.
+                if getattr(exc, "code", None) != 404:
+                    break
+        return None, safe_api_error(last_error)
     except Exception as exc:
         return None, safe_api_error(exc)
 
